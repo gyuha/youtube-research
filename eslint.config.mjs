@@ -1,23 +1,9 @@
-import js from '@eslint/js';
-import globals from 'globals';
-import tseslint from 'typescript-eslint';
+import { defineConfig, globalIgnores } from 'eslint/config';
+import nextTs from 'eslint-config-next/typescript';
+import nextVitals from 'eslint-config-next/core-web-vitals';
 
-export default tseslint.config(
-  {
-    ignores: ['.next/**', 'coverage/**', 'node_modules/**', 'pnpm-lock.yaml'],
-  },
-  js.configs.recommended,
-  ...tseslint.configs.recommended,
-  {
-    files: ['**/*.{js,mjs,cjs,ts,mts,cts,tsx}'],
-    languageOptions: {
-      globals: {
-        ...globals.browser,
-        ...globals.node,
-      },
-    },
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-    },
-  },
-);
+export default defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  globalIgnores(['.next/**', 'coverage/**', 'node_modules/**', 'pnpm-lock.yaml']),
+]);
