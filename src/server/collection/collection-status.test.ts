@@ -6,6 +6,10 @@ import {
 } from './collection-status';
 
 describe('collection status helpers', () => {
+  it('treats idle as terminal', () => {
+    expect(isTerminalCollectionStatus(COLLECTION_STATUSES.idle)).toBe(true);
+  });
+
   it('treats completed as terminal', () => {
     expect(isTerminalCollectionStatus(COLLECTION_STATUSES.completed)).toBe(
       true,
