@@ -1,0 +1,10 @@
+.worktrees/
+node_modules/
+.next/
+.env
+.env.local
+dist/
+coverage/
+*.log
+dev.db
+dev.db-journal
