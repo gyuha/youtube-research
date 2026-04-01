@@ -1,9 +1,7 @@
 {
   "compilerOptions": {
     "allowJs": false,
-    "baseUrl": ".",
     "esModuleInterop": true,
-    "incremental": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
     "lib": [
@@ -14,16 +12,10 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "noEmit": true,
-    "paths": {
-      "@/*": [
-        "src/*"
-      ]
-    },
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
     "target": "ES2022",
-    "ignoreDeprecations": "6.0",
     "types": [
       "node"
     ],
@@ -31,7 +23,8 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "incremental": true
   },
   "include": [
     "next-env.d.ts",

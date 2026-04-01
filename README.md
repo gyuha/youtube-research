@@ -12,6 +12,7 @@ pnpm dev
 ## Scripts
 
 - `pnpm dev` starts the development server.
+- `pnpm typecheck` runs the TypeScript compiler in no-emit mode.
 - `pnpm test` runs Vitest.
 - `pnpm build` creates the production build.
 
