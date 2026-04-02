@@ -5,5 +5,12 @@ import nextVitals from 'eslint-config-next/core-web-vitals';
 export default defineConfig([
   ...nextVitals,
   ...nextTs,
-  globalIgnores(['.next/**', 'coverage/**', 'node_modules/**', 'pnpm-lock.yaml']),
+  globalIgnores([
+    '.next/**',
+    '.worktrees/**',
+    'coverage/**',
+    'dist/**',
+    'node_modules/**',
+    'pnpm-lock.yaml',
+  ]),
 ]);
