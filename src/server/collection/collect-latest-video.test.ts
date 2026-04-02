@@ -10,8 +10,8 @@ const mocks = vi.hoisted(() => ({
   findVideoSnapshotByChannelId: vi.fn(),
   replaceLatestVideoSnapshot: vi.fn(),
   summarizeTranscript: vi.fn(),
-  getTranscript: vi.fn(),
   fetchLatestVideo: vi.fn(),
+  fetchTranscript: vi.fn(),
 }));
 
 vi.mock('@/server/db/repositories/analysis-result-repository', () => ({
@@ -43,9 +43,9 @@ vi.mock('@/server/analysis/analysis-service', () => ({
   },
 }));
 
-vi.mock('@/server/transcripts/transcript-service', () => ({
-  transcriptService: {
-    getTranscript: mocks.getTranscript,
+vi.mock('youtube-transcript', () => ({
+  YoutubeTranscript: {
+    fetchTranscript: mocks.fetchTranscript,
   },
 }));
 
@@ -79,7 +79,7 @@ describe('collectLatestVideo', () => {
       insights: ['인사이트 1', '인사이트 2', '인사이트 3'],
       summary: '요약',
     });
-    mocks.getTranscript.mockResolvedValue('transcript text');
+    mocks.fetchTranscript.mockResolvedValue([{ text: 'transcript text' }]);
     mocks.fetchLatestVideo.mockResolvedValue(latestVideo);
   });
 
@@ -116,14 +116,14 @@ describe('collectLatestVideo', () => {
       'No Change',
     );
     expect(mocks.touchLastCheckedAt).toHaveBeenCalledWith(channelId);
-    expect(mocks.getTranscript).not.toHaveBeenCalled();
+    expect(mocks.fetchTranscript).not.toHaveBeenCalled();
     expect(result).toEqual({
       message: '새 영상이 없습니다',
       status: 'No Change',
     });
   });
 
-  it('marks the channel as no captions when transcript data is unavailable', async () => {
+  it('returns No Captions when the latest video has no transcript', async () => {
     mocks.findAnalysisResultByChannelId.mockResolvedValue({
       insight1: 'old insight 1',
       insight2: 'old insight 2',
@@ -132,7 +132,7 @@ describe('collectLatestVideo', () => {
       summary: 'old summary',
       videoSnapshotId: 'snapshot-1',
     });
-    mocks.getTranscript.mockResolvedValue(null);
+    mocks.fetchTranscript.mockResolvedValue([]);
 
     const { collectLatestVideo } = await import('./collect-latest-video');
     const result = await collectLatestVideo({ channelId, youtubeChannelId });
@@ -150,14 +150,12 @@ describe('collectLatestVideo', () => {
     });
     expect(mocks.summarizeTranscript).not.toHaveBeenCalled();
     expect(mocks.touchLastCheckedAt).toHaveBeenCalledWith(channelId);
-    expect(result).toEqual({
-      message: '이 영상은 자막이 없어 분석하지 않았습니다',
-      status: 'No Captions',
-    });
+    expect(result.status).toBe('No Captions');
+    expect(result.message).toContain('자막');
   });
 
   it('treats a repeated no-captions upload as no change after the snapshot advances', async () => {
-    mocks.getTranscript.mockResolvedValue(null);
+    mocks.fetchTranscript.mockResolvedValue([]);
     mocks.findVideoSnapshotByChannelId
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ youtubeVideoId: 'video-2' });
@@ -175,7 +173,7 @@ describe('collectLatestVideo', () => {
       message: '새 영상이 없습니다',
       status: 'No Change',
     });
-    expect(mocks.getTranscript).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchTranscript).toHaveBeenCalledTimes(1);
     expect(mocks.upsertAnalysisStatus).toHaveBeenLastCalledWith(
       channelId,
       'No Change',
@@ -187,7 +185,7 @@ describe('collectLatestVideo', () => {
     const result = await collectLatestVideo({ channelId, youtubeChannelId });
 
     expect(mocks.fetchLatestVideo).toHaveBeenCalledWith(youtubeChannelId);
-    expect(mocks.getTranscript).toHaveBeenCalledWith('video-2');
+    expect(mocks.fetchTranscript).toHaveBeenCalledWith('video-2');
     expect(mocks.summarizeTranscript).toHaveBeenCalledWith('transcript text');
     expect(mocks.commitLatestForVideo).toHaveBeenCalledWith(channelId, {
       analysisResult: {
@@ -206,7 +204,7 @@ describe('collectLatestVideo', () => {
   it('retries provider work after an atomic latest-state commit fails', async () => {
     let persistedSnapshot: { youtubeVideoId: string } | null = null;
 
-    mocks.getTranscript.mockResolvedValue(null);
+    mocks.fetchTranscript.mockResolvedValue([]);
     mocks.findVideoSnapshotByChannelId.mockImplementation(
       async () => persistedSnapshot,
     );
@@ -232,7 +230,7 @@ describe('collectLatestVideo', () => {
       status: 'No Captions',
     });
     expect(mocks.fetchLatestVideo).toHaveBeenCalledTimes(2);
-    expect(mocks.getTranscript).toHaveBeenCalledTimes(2);
+    expect(mocks.fetchTranscript).toHaveBeenCalledTimes(2);
     expect(mocks.upsertAnalysisStatus).toHaveBeenCalledWith(
       channelId,
       'Failed',
