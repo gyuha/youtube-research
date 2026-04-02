@@ -2,13 +2,23 @@ import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+  collectChannel: vi.fn(),
   listForDashboard: vi.fn(),
+  registerChannel: vi.fn(),
 }));
 
 vi.mock('@/server/db/repositories/channel-repository', () => ({
   channelRepository: {
     listForDashboard: mocks.listForDashboard,
   },
+}));
+
+vi.mock('@/app/actions/collect-channel', () => ({
+  collectChannel: mocks.collectChannel,
+}));
+
+vi.mock('@/app/actions/register-channel', () => ({
+  registerChannel: mocks.registerChannel,
 }));
 
 describe('HomePage', () => {
