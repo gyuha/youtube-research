@@ -101,4 +101,41 @@ describe('registerChannel', () => {
       ok: true,
     });
   });
+
+  it('returns the existing channel when create loses a unique-constraint race', async () => {
+    const existingChannel = {
+      id: 'channel-3',
+      channelUrl: 'https://www.youtube.com/channel/UC123',
+      youtubeChannelId: 'UC123',
+      title: 'OpenAI',
+      thumbnailUrl: 'https://example.com/thumb.jpg',
+    };
+
+    mocks.resolveChannel.mockResolvedValue({
+      canonicalUrl: 'https://www.youtube.com/channel/UC123',
+      thumbnailUrl: 'https://example.com/thumb.jpg',
+      title: 'OpenAI',
+      youtubeChannelId: 'UC123',
+    });
+    mocks.findByYoutubeChannelId
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(existingChannel);
+    mocks.create.mockRejectedValue({
+      code: 'P2002',
+      name: 'PrismaClientKnownRequestError',
+    });
+
+    const result = await registerChannel({
+      channelUrl: 'https://www.youtube.com/@openai',
+    });
+
+    expect(mocks.findByYoutubeChannelId).toHaveBeenNthCalledWith(1, 'UC123');
+    expect(mocks.findByYoutubeChannelId).toHaveBeenNthCalledWith(2, 'UC123');
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      channel: existingChannel,
+      created: false,
+      ok: true,
+    });
+  });
 });
