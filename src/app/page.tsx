@@ -1,10 +1,41 @@
 import { ChannelList } from '@/components/channel-list';
 import { ChannelRegistrationForm } from '@/components/channel-registration-form';
+import type { DashboardChannel } from '@/components/dashboard-types';
+import { getDashboardStatus } from '@/components/dashboard-types';
 import { ResultDetailPanel } from '@/components/result-detail-panel';
 import { channelRepository } from '@/server/db/repositories/channel-repository';
 
+function getFeatureTimestamp(channel: DashboardChannel) {
+  return (
+    channel.analysisResult?.processedAt?.getTime() ??
+    channel.lastCheckedAt?.getTime() ??
+    channel.createdAt.getTime()
+  );
+}
+
+function getFeaturedChannel(channels: DashboardChannel[]) {
+  return [...channels].sort((left, right) => {
+    const timestampDifference = getFeatureTimestamp(right) - getFeatureTimestamp(left);
+
+    if (timestampDifference !== 0) {
+      return timestampDifference;
+    }
+
+    return right.createdAt.getTime() - left.createdAt.getTime();
+  })[0] ?? null;
+}
+
 export default async function HomePage() {
-  const channels = await channelRepository.listForDashboard();
+  const channels = (await channelRepository.listForDashboard()).map((channel) => ({
+    ...channel,
+    analysisResult: channel.analysisResult
+      ? {
+          ...channel.analysisResult,
+          status: getDashboardStatus(channel.analysisResult.status),
+        }
+      : null,
+  }));
+  const featuredChannel = getFeaturedChannel(channels);
 
   return (
     <main className="min-h-screen px-6 py-10 sm:px-10">
@@ -54,7 +85,7 @@ export default async function HomePage() {
                 Review the newest stored video snapshot and Korean analysis.
               </p>
             </div>
-            <ResultDetailPanel channel={channels[0] ?? null} />
+            <ResultDetailPanel channel={featuredChannel} />
           </div>
         </section>
       </div>

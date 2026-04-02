@@ -17,6 +17,7 @@ export const channelRepository = {
         videoSnapshot: true,
       },
     }),
+  findById: (channelId: string) => db.channel.findUnique({ where: { id: channelId } }),
   findByYoutubeChannelId: (youtubeChannelId: string) =>
     db.channel.findUnique({ where: { youtubeChannelId } }),
   create: (input: CreateChannelInput) =>

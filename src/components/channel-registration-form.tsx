@@ -1,16 +1,40 @@
+'use client';
+
+import { useState, useTransition } from 'react';
+
 import { registerChannel } from '@/app/actions/register-channel';
 
-export function ChannelRegistrationForm() {
-  async function registerChannelAction(formData: FormData) {
-    'use server';
+function getFeedbackMessage(created: boolean) {
+  return created
+    ? 'Channel registered successfully.'
+    : 'Channel is already registered.';
+}
 
-    await registerChannel({
-      channelUrl: String(formData.get('channelUrl') ?? ''),
+export function ChannelRegistrationForm() {
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const channelUrl = String(formData.get('channelUrl') ?? '');
+
+    startTransition(async () => {
+      try {
+        const result = await registerChannel({ channelUrl });
+
+        setFeedback(getFeedbackMessage(result.created));
+        form.reset();
+      } catch {
+        setFeedback('Unable to register the channel right now.');
+      }
     });
   }
 
   return (
-    <form action={registerChannelAction} className="space-y-3">
+    <form className="space-y-3" onSubmit={handleSubmit}>
       <label className="block text-sm font-medium text-slate-700" htmlFor="channel-url">
         YouTube channel URL
       </label>
@@ -25,11 +49,17 @@ export function ChannelRegistrationForm() {
         />
         <button
           className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700"
+          disabled={isPending}
           type="submit"
         >
-          Register Channel
+          {isPending ? 'Registering...' : 'Register Channel'}
         </button>
       </div>
+      {feedback ? (
+        <p className="text-sm text-slate-600" role="status">
+          {feedback}
+        </p>
+      ) : null}
     </form>
   );
 }

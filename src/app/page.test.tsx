@@ -36,7 +36,7 @@ describe('HomePage', () => {
         youtubeChannelId: 'UC123',
         title: 'OpenAI',
         thumbnailUrl: 'https://example.com/openai.jpg',
-        lastCheckedAt: new Date('2026-04-02T10:00:00.000Z'),
+        lastCheckedAt: new Date('2026-04-02T09:00:00.000Z'),
         createdAt: new Date('2026-04-01T10:00:00.000Z'),
         updatedAt: new Date('2026-04-02T10:00:00.000Z'),
         analysisResult: {
@@ -49,7 +49,7 @@ describe('HomePage', () => {
           insight2: '인사이트 2',
           insight3: '인사이트 3',
           errorMessage: null,
-          processedAt: new Date('2026-04-02T10:00:00.000Z'),
+          processedAt: new Date('2026-04-02T09:00:00.000Z'),
           createdAt: new Date('2026-04-02T10:00:00.000Z'),
           updatedAt: new Date('2026-04-02T10:00:00.000Z'),
         },
@@ -63,6 +63,41 @@ describe('HomePage', () => {
           thumbnailUrl: 'https://example.com/video.jpg',
           createdAt: new Date('2026-04-02T10:00:00.000Z'),
           updatedAt: new Date('2026-04-02T10:00:00.000Z'),
+        },
+      },
+      {
+        id: 'channel-2',
+        channelUrl: 'https://www.youtube.com/channel/UC999',
+        youtubeChannelId: 'UC999',
+        title: 'DeepMind',
+        thumbnailUrl: 'https://example.com/deepmind.jpg',
+        lastCheckedAt: new Date('2026-04-02T12:00:00.000Z'),
+        createdAt: new Date('2026-03-30T10:00:00.000Z'),
+        updatedAt: new Date('2026-04-02T12:00:00.000Z'),
+        analysisResult: {
+          id: 'analysis-2',
+          channelId: 'channel-2',
+          videoSnapshotId: 'snapshot-2',
+          status: 'No Change',
+          summary: '더 최신 결과입니다.',
+          insight1: '핵심 1',
+          insight2: '핵심 2',
+          insight3: '핵심 3',
+          errorMessage: null,
+          processedAt: new Date('2026-04-02T12:00:00.000Z'),
+          createdAt: new Date('2026-04-02T12:00:00.000Z'),
+          updatedAt: new Date('2026-04-02T12:00:00.000Z'),
+        },
+        videoSnapshot: {
+          id: 'snapshot-2',
+          channelId: 'channel-2',
+          youtubeVideoId: 'video-2',
+          title: 'Gemini Update',
+          videoUrl: 'https://youtube.com/watch?v=video-2',
+          publishedAt: new Date('2026-04-02T11:00:00.000Z'),
+          thumbnailUrl: 'https://example.com/video-2.jpg',
+          createdAt: new Date('2026-04-02T12:00:00.000Z'),
+          updatedAt: new Date('2026-04-02T12:00:00.000Z'),
         },
       },
     ]);
@@ -80,11 +115,13 @@ describe('HomePage', () => {
     expect(
       screen.getByRole('heading', { name: /latest result/i }),
     ).toBeInTheDocument();
-    expect(screen.getAllByText('OpenAI')).toHaveLength(2);
+    expect(screen.getAllByText('OpenAI')).toHaveLength(1);
+    expect(screen.getAllByText('DeepMind')).toHaveLength(2);
     expect(
       screen.getByRole('button', { name: /collect now for openai/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText('GPT Update')).toBeInTheDocument();
-    expect(screen.getByText('한국어 요약입니다.')).toBeInTheDocument();
+    expect(screen.getByText('Gemini Update')).toBeInTheDocument();
+    expect(screen.getByText('더 최신 결과입니다.')).toBeInTheDocument();
+    expect(screen.queryByText('GPT Update')).not.toBeInTheDocument();
   });
 });

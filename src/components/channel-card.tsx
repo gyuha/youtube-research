@@ -1,8 +1,14 @@
+'use client';
+
+import { useState, useTransition } from 'react';
+
 import { collectChannel } from '@/app/actions/collect-channel';
 import { COLLECTION_STATUSES } from '@/server/collection/collection-status';
 
+import type { CollectionStatus } from '@/server/collection/collection-status';
 import type { DashboardChannel } from './dashboard-types';
 
+import { getDashboardStatus } from './dashboard-types';
 import { StatusBadge } from './status-badge';
 
 function formatLastChecked(value: Date | null) {
@@ -17,14 +23,28 @@ function formatLastChecked(value: Date | null) {
 }
 
 export function ChannelCard({ channel }: { channel: DashboardChannel }) {
-  const status = channel.analysisResult?.status ?? COLLECTION_STATUSES.idle;
+  const initialStatus = channel.analysisResult?.status ?? COLLECTION_STATUSES.idle;
+  const [status, setStatus] = useState<CollectionStatus>(initialStatus);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
-  async function collectChannelAction() {
-    'use server';
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
-    await collectChannel({
-      channelId: channel.id,
-      youtubeChannelId: channel.youtubeChannelId,
+    startTransition(async () => {
+      try {
+        const result = await collectChannel({
+          channelId: channel.id,
+        });
+
+        const nextStatus = getDashboardStatus(result.status);
+
+        setStatus(nextStatus);
+        setFeedback(result.message ?? `Latest status: ${nextStatus}`);
+      } catch {
+        setStatus(COLLECTION_STATUSES.failed);
+        setFeedback('Unable to collect right now.');
+      }
     });
   }
 
@@ -54,15 +74,21 @@ export function ChannelCard({ channel }: { channel: DashboardChannel }) {
               Last checked: {formatLastChecked(channel.lastCheckedAt)}
             </p>
           </div>
-          <form action={collectChannelAction}>
+          <form onSubmit={handleSubmit}>
             <button
               aria-label={`Collect Now for ${channel.title}`}
               className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:border-slate-500 hover:bg-slate-50"
+              disabled={isPending}
               type="submit"
             >
-              Collect Now
+              {isPending ? 'Collecting...' : 'Collect Now'}
             </button>
           </form>
+          {feedback ? (
+            <p className="text-sm text-slate-600" role="status">
+              {feedback} ({status})
+            </p>
+          ) : null}
         </div>
       </div>
     </article>

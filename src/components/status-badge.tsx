@@ -1,4 +1,7 @@
-import { COLLECTION_STATUSES } from '@/server/collection/collection-status';
+import {
+  COLLECTION_STATUSES,
+  type CollectionStatus,
+} from '@/server/collection/collection-status';
 
 const badgeClassNames: Record<string, string> = {
   [COLLECTION_STATUSES.collecting]:
@@ -15,7 +18,7 @@ const badgeClassNames: Record<string, string> = {
     'bg-sky-100 text-sky-900 ring-1 ring-inset ring-sky-200',
 };
 
-export function StatusBadge({ status }: { status?: string | null }) {
+export function StatusBadge({ status }: { status?: CollectionStatus | null }) {
   const resolvedStatus = status ?? COLLECTION_STATUSES.idle;
 
   return (
