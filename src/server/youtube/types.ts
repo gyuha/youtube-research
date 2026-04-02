@@ -14,3 +14,11 @@ export interface ResolvedChannel {
   title: string;
   youtubeChannelId: string;
 }
+
+export interface LatestYoutubeVideo {
+  publishedAt: Date;
+  thumbnailUrl: string | null;
+  title: string;
+  videoUrl: string;
+  youtubeVideoId: string;
+}
