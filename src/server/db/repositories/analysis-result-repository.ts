@@ -1,10 +1,12 @@
+import type { CollectionStatus } from '../../collection/collection-status';
+
 import { db } from '../client';
 
 interface ReplaceLatestAnalysisResultInput {
   insight1: string;
   insight2: string;
   insight3: string;
-  status: string;
+  status: CollectionStatus;
   summary: string;
   videoSnapshotId: string;
 }
@@ -20,7 +22,7 @@ export const analysisResultRepository = {
     }),
   upsertStatus: (
     channelId: string,
-    status: string,
+    status: CollectionStatus,
     errorMessage?: string | null,
   ) =>
     db.analysisResult.upsert({
