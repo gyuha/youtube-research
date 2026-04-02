@@ -11,5 +11,10 @@ export type CollectionStatus =
   (typeof COLLECTION_STATUSES)[keyof typeof COLLECTION_STATUSES];
 
 export function isTerminalCollectionStatus(status: CollectionStatus) {
-  return status !== COLLECTION_STATUSES.collecting;
+  return new Set<CollectionStatus>([
+    COLLECTION_STATUSES.completed,
+    COLLECTION_STATUSES.failed,
+    COLLECTION_STATUSES.noCaptions,
+    COLLECTION_STATUSES.noChange,
+  ]).has(status);
 }
