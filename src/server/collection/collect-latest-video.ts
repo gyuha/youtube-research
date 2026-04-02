@@ -24,24 +24,29 @@ interface CollectLatestVideoResult {
   status: CollectionStatus;
 }
 
+async function touchLastCheckedAtSafely(channelId: string) {
+  try {
+    await channelRepository.touchLastCheckedAt(channelId);
+  } catch (error) {
+    console.error(`Failed to update lastCheckedAt for ${channelId}`, error);
+  }
+}
+
 export async function collectLatestVideo(
   input: CollectLatestVideoInput,
 ): Promise<CollectLatestVideoResult> {
-  const current = await analysisResultRepository.findByChannelId(input.channelId);
-
-  if (current?.status === COLLECTION_STATUSES.collecting) {
-    return {
-      message: ALREADY_COLLECTING_MESSAGE,
-      status: COLLECTION_STATUSES.collecting,
-    };
-  }
-
-  await analysisResultRepository.upsertStatus(
-    input.channelId,
-    COLLECTION_STATUSES.collecting,
-  );
-
   try {
+    const didBeginCollection = await analysisResultRepository.beginCollection(
+      input.channelId,
+    );
+
+    if (!didBeginCollection) {
+      return {
+        message: ALREADY_COLLECTING_MESSAGE,
+        status: COLLECTION_STATUSES.collecting,
+      };
+    }
+
     const latestVideo = await youtubeApi.fetchLatestVideo(input.youtubeChannelId);
     const previousSnapshot = await videoSnapshotRepository.findByChannelId(
       input.channelId,
@@ -52,7 +57,7 @@ export async function collectLatestVideo(
         input.channelId,
         COLLECTION_STATUSES.noChange,
       );
-      await channelRepository.touchLastCheckedAt(input.channelId);
+      await touchLastCheckedAtSafely(input.channelId);
 
       return {
         message: NO_CHANGE_MESSAGE,
@@ -65,20 +70,18 @@ export async function collectLatestVideo(
     );
 
     if (!transcript) {
-      const snapshot = await videoSnapshotRepository.replaceLatest(
-        input.channelId,
-        latestVideo,
-      );
-      await analysisResultRepository.replaceLatest(input.channelId, {
-        errorMessage: NO_CAPTIONS_MESSAGE,
-        insight1: null,
-        insight2: null,
-        insight3: null,
-        status: COLLECTION_STATUSES.noCaptions,
-        summary: null,
-        videoSnapshotId: snapshot.id,
+      await analysisResultRepository.commitLatestForVideo(input.channelId, {
+        analysisResult: {
+          errorMessage: NO_CAPTIONS_MESSAGE,
+          insight1: null,
+          insight2: null,
+          insight3: null,
+          status: COLLECTION_STATUSES.noCaptions,
+          summary: null,
+        },
+        videoSnapshot: latestVideo,
       });
-      await channelRepository.touchLastCheckedAt(input.channelId);
+      await touchLastCheckedAtSafely(input.channelId);
 
       return {
         message: NO_CAPTIONS_MESSAGE,
@@ -87,20 +90,17 @@ export async function collectLatestVideo(
     }
 
     const analysis = await analysisService.summarizeTranscript(transcript);
-    const snapshot = await videoSnapshotRepository.replaceLatest(
-      input.channelId,
-      latestVideo,
-    );
-
-    await analysisResultRepository.replaceLatest(input.channelId, {
-      insight1: analysis.insights[0],
-      insight2: analysis.insights[1],
-      insight3: analysis.insights[2],
-      status: COLLECTION_STATUSES.completed,
-      summary: analysis.summary,
-      videoSnapshotId: snapshot.id,
+    await analysisResultRepository.commitLatestForVideo(input.channelId, {
+      analysisResult: {
+        insight1: analysis.insights[0],
+        insight2: analysis.insights[1],
+        insight3: analysis.insights[2],
+        status: COLLECTION_STATUSES.completed,
+        summary: analysis.summary,
+      },
+      videoSnapshot: latestVideo,
     });
-    await channelRepository.touchLastCheckedAt(input.channelId);
+    await touchLastCheckedAtSafely(input.channelId);
 
     return { status: COLLECTION_STATUSES.completed };
   } catch {
@@ -109,7 +109,7 @@ export async function collectLatestVideo(
       COLLECTION_STATUSES.failed,
       FAILED_MESSAGE,
     );
-    await channelRepository.touchLastCheckedAt(input.channelId);
+    await touchLastCheckedAtSafely(input.channelId);
 
     return {
       message: FAILED_MESSAGE,

@@ -1,6 +1,6 @@
 import { db } from '../client';
 
-interface ReplaceLatestVideoSnapshotInput {
+export interface ReplaceLatestVideoSnapshotInput {
   publishedAt: Date;
   thumbnailUrl?: string | null;
   title: string;

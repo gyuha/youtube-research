@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+  beginCollection: vi.fn(),
+  commitLatestForVideo: vi.fn(),
   findAnalysisResultByChannelId: vi.fn(),
   upsertAnalysisStatus: vi.fn(),
   replaceLatestAnalysisResult: vi.fn(),
@@ -14,6 +16,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/server/db/repositories/analysis-result-repository', () => ({
   analysisResultRepository: {
+    beginCollection: mocks.beginCollection,
+    commitLatestForVideo: mocks.commitLatestForVideo,
     findByChannelId: mocks.findAnalysisResultByChannelId,
     replaceLatest: mocks.replaceLatestAnalysisResult,
     upsertStatus: mocks.upsertAnalysisStatus,
@@ -63,6 +67,8 @@ describe('collectLatestVideo', () => {
   };
 
   beforeEach(() => {
+    mocks.beginCollection.mockResolvedValue(true);
+    mocks.commitLatestForVideo.mockResolvedValue({ id: 'snapshot-2' });
     mocks.findAnalysisResultByChannelId.mockResolvedValue(null);
     mocks.upsertAnalysisStatus.mockResolvedValue(undefined);
     mocks.replaceLatestAnalysisResult.mockResolvedValue(undefined);
@@ -82,9 +88,7 @@ describe('collectLatestVideo', () => {
   });
 
   it('returns collecting when a collection is already in progress', async () => {
-    mocks.findAnalysisResultByChannelId.mockResolvedValue({
-      status: 'Collecting',
-    });
+    mocks.beginCollection.mockResolvedValue(false);
 
     const { collectLatestVideo } = await import('./collect-latest-video');
     const result = await collectLatestVideo({ channelId, youtubeChannelId });
@@ -93,7 +97,7 @@ describe('collectLatestVideo', () => {
       message: '이미 수집 중입니다',
       status: 'Collecting',
     });
-    expect(mocks.upsertAnalysisStatus).not.toHaveBeenCalled();
+    expect(mocks.beginCollection).toHaveBeenCalledWith(channelId);
     expect(mocks.fetchLatestVideo).not.toHaveBeenCalled();
     expect(mocks.touchLastCheckedAt).not.toHaveBeenCalled();
   });
@@ -106,13 +110,8 @@ describe('collectLatestVideo', () => {
     const { collectLatestVideo } = await import('./collect-latest-video');
     const result = await collectLatestVideo({ channelId, youtubeChannelId });
 
-    expect(mocks.upsertAnalysisStatus).toHaveBeenNthCalledWith(
-      1,
-      channelId,
-      'Collecting',
-    );
-    expect(mocks.upsertAnalysisStatus).toHaveBeenNthCalledWith(
-      2,
+    expect(mocks.beginCollection).toHaveBeenCalledWith(channelId);
+    expect(mocks.upsertAnalysisStatus).toHaveBeenCalledWith(
       channelId,
       'No Change',
     );
@@ -138,23 +137,16 @@ describe('collectLatestVideo', () => {
     const { collectLatestVideo } = await import('./collect-latest-video');
     const result = await collectLatestVideo({ channelId, youtubeChannelId });
 
-    expect(mocks.upsertAnalysisStatus).toHaveBeenNthCalledWith(
-      1,
-      channelId,
-      'Collecting',
-    );
-    expect(mocks.replaceLatestVideoSnapshot).toHaveBeenCalledWith(
-      channelId,
-      latestVideo,
-    );
-    expect(mocks.replaceLatestAnalysisResult).toHaveBeenCalledWith(channelId, {
-      errorMessage: '이 영상은 자막이 없어 분석하지 않았습니다',
-      insight1: null,
-      insight2: null,
-      insight3: null,
-      status: 'No Captions',
-      summary: null,
-      videoSnapshotId: 'snapshot-2',
+    expect(mocks.commitLatestForVideo).toHaveBeenCalledWith(channelId, {
+      analysisResult: {
+        errorMessage: '이 영상은 자막이 없어 분석하지 않았습니다',
+        insight1: null,
+        insight2: null,
+        insight3: null,
+        status: 'No Captions',
+        summary: null,
+      },
+      videoSnapshot: latestVideo,
     });
     expect(mocks.summarizeTranscript).not.toHaveBeenCalled();
     expect(mocks.touchLastCheckedAt).toHaveBeenCalledWith(channelId);
@@ -183,7 +175,6 @@ describe('collectLatestVideo', () => {
       message: '새 영상이 없습니다',
       status: 'No Change',
     });
-    expect(mocks.replaceLatestVideoSnapshot).toHaveBeenCalledTimes(1);
     expect(mocks.getTranscript).toHaveBeenCalledTimes(1);
     expect(mocks.upsertAnalysisStatus).toHaveBeenLastCalledWith(
       channelId,
@@ -198,20 +189,96 @@ describe('collectLatestVideo', () => {
     expect(mocks.fetchLatestVideo).toHaveBeenCalledWith(youtubeChannelId);
     expect(mocks.getTranscript).toHaveBeenCalledWith('video-2');
     expect(mocks.summarizeTranscript).toHaveBeenCalledWith('transcript text');
-    expect(mocks.replaceLatestVideoSnapshot).toHaveBeenCalledWith(
-      channelId,
-      latestVideo,
-    );
-    expect(mocks.replaceLatestAnalysisResult).toHaveBeenCalledWith(channelId, {
-      insight1: '인사이트 1',
-      insight2: '인사이트 2',
-      insight3: '인사이트 3',
-      status: 'Completed',
-      summary: '요약',
-      videoSnapshotId: 'snapshot-2',
+    expect(mocks.commitLatestForVideo).toHaveBeenCalledWith(channelId, {
+      analysisResult: {
+        insight1: '인사이트 1',
+        insight2: '인사이트 2',
+        insight3: '인사이트 3',
+        status: 'Completed',
+        summary: '요약',
+      },
+      videoSnapshot: latestVideo,
     });
     expect(mocks.touchLastCheckedAt).toHaveBeenCalledWith(channelId);
     expect(result).toEqual({ status: 'Completed' });
+  });
+
+  it('retries provider work after an atomic latest-state commit fails', async () => {
+    let persistedSnapshot: { youtubeVideoId: string } | null = null;
+
+    mocks.getTranscript.mockResolvedValue(null);
+    mocks.findVideoSnapshotByChannelId.mockImplementation(
+      async () => persistedSnapshot,
+    );
+    mocks.commitLatestForVideo
+      .mockRejectedValueOnce(new Error('transaction failed'))
+      .mockImplementationOnce(async (_, input) => {
+        persistedSnapshot = { youtubeVideoId: input.videoSnapshot.youtubeVideoId };
+
+        return { id: 'snapshot-2' };
+      });
+
+    const { collectLatestVideo } = await import('./collect-latest-video');
+
+    const firstResult = await collectLatestVideo({ channelId, youtubeChannelId });
+    const secondResult = await collectLatestVideo({ channelId, youtubeChannelId });
+
+    expect(firstResult).toEqual({
+      message: '처리 중 오류가 발생했습니다',
+      status: 'Failed',
+    });
+    expect(secondResult).toEqual({
+      message: '이 영상은 자막이 없어 분석하지 않았습니다',
+      status: 'No Captions',
+    });
+    expect(mocks.fetchLatestVideo).toHaveBeenCalledTimes(2);
+    expect(mocks.getTranscript).toHaveBeenCalledTimes(2);
+    expect(mocks.upsertAnalysisStatus).toHaveBeenCalledWith(
+      channelId,
+      'Failed',
+      '처리 중 오류가 발생했습니다',
+    );
+  });
+
+  it('short-circuits the losing caller when collection lock acquisition fails', async () => {
+    let releaseFirstFetch: (() => void) | undefined;
+
+    mocks.beginCollection.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+    mocks.fetchLatestVideo.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          releaseFirstFetch = () => resolve(latestVideo);
+        }),
+    );
+
+    const { collectLatestVideo } = await import('./collect-latest-video');
+
+    const firstRun = collectLatestVideo({ channelId, youtubeChannelId });
+    const secondResult = await collectLatestVideo({ channelId, youtubeChannelId });
+
+    releaseFirstFetch?.();
+    await firstRun;
+
+    expect(secondResult).toEqual({
+      message: '이미 수집 중입니다',
+      status: 'Collecting',
+    });
+    expect(mocks.fetchLatestVideo).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the completed result when lastCheckedAt update fails after commit', async () => {
+    mocks.touchLastCheckedAt.mockRejectedValue(new Error('touch failed'));
+
+    const { collectLatestVideo } = await import('./collect-latest-video');
+    const result = await collectLatestVideo({ channelId, youtubeChannelId });
+
+    expect(result).toEqual({ status: 'Completed' });
+    expect(mocks.commitLatestForVideo).toHaveBeenCalledTimes(1);
+    expect(mocks.upsertAnalysisStatus).not.toHaveBeenCalledWith(
+      channelId,
+      'Failed',
+      '처리 중 오류가 발생했습니다',
+    );
   });
 
   it('marks the channel as failed when collection raises an error', async () => {
@@ -220,13 +287,8 @@ describe('collectLatestVideo', () => {
     const { collectLatestVideo } = await import('./collect-latest-video');
     const result = await collectLatestVideo({ channelId, youtubeChannelId });
 
-    expect(mocks.upsertAnalysisStatus).toHaveBeenNthCalledWith(
-      1,
-      channelId,
-      'Collecting',
-    );
-    expect(mocks.upsertAnalysisStatus).toHaveBeenNthCalledWith(
-      2,
+    expect(mocks.beginCollection).toHaveBeenCalledWith(channelId);
+    expect(mocks.upsertAnalysisStatus).toHaveBeenCalledWith(
       channelId,
       'Failed',
       '처리 중 오류가 발생했습니다',
