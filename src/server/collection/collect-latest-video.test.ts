@@ -125,6 +125,14 @@ describe('collectLatestVideo', () => {
   });
 
   it('marks the channel as no captions when transcript data is unavailable', async () => {
+    mocks.findAnalysisResultByChannelId.mockResolvedValue({
+      insight1: 'old insight 1',
+      insight2: 'old insight 2',
+      insight3: 'old insight 3',
+      status: 'Completed',
+      summary: 'old summary',
+      videoSnapshotId: 'snapshot-1',
+    });
     mocks.getTranscript.mockResolvedValue(null);
 
     const { collectLatestVideo } = await import('./collect-latest-video');
@@ -135,18 +143,20 @@ describe('collectLatestVideo', () => {
       channelId,
       'Collecting',
     );
-    expect(mocks.upsertAnalysisStatus).toHaveBeenNthCalledWith(
-      2,
-      channelId,
-      'No Captions',
-      '이 영상은 자막이 없어 분석하지 않았습니다',
-    );
     expect(mocks.replaceLatestVideoSnapshot).toHaveBeenCalledWith(
       channelId,
       latestVideo,
     );
+    expect(mocks.replaceLatestAnalysisResult).toHaveBeenCalledWith(channelId, {
+      errorMessage: '이 영상은 자막이 없어 분석하지 않았습니다',
+      insight1: null,
+      insight2: null,
+      insight3: null,
+      status: 'No Captions',
+      summary: null,
+      videoSnapshotId: 'snapshot-2',
+    });
     expect(mocks.summarizeTranscript).not.toHaveBeenCalled();
-    expect(mocks.replaceLatestAnalysisResult).not.toHaveBeenCalled();
     expect(mocks.touchLastCheckedAt).toHaveBeenCalledWith(channelId);
     expect(result).toEqual({
       message: '이 영상은 자막이 없어 분석하지 않았습니다',
@@ -175,8 +185,7 @@ describe('collectLatestVideo', () => {
     });
     expect(mocks.replaceLatestVideoSnapshot).toHaveBeenCalledTimes(1);
     expect(mocks.getTranscript).toHaveBeenCalledTimes(1);
-    expect(mocks.upsertAnalysisStatus).toHaveBeenNthCalledWith(
-      4,
+    expect(mocks.upsertAnalysisStatus).toHaveBeenLastCalledWith(
       channelId,
       'No Change',
     );

@@ -65,12 +65,19 @@ export async function collectLatestVideo(
     );
 
     if (!transcript) {
-      await videoSnapshotRepository.replaceLatest(input.channelId, latestVideo);
-      await analysisResultRepository.upsertStatus(
+      const snapshot = await videoSnapshotRepository.replaceLatest(
         input.channelId,
-        COLLECTION_STATUSES.noCaptions,
-        NO_CAPTIONS_MESSAGE,
+        latestVideo,
       );
+      await analysisResultRepository.replaceLatest(input.channelId, {
+        errorMessage: NO_CAPTIONS_MESSAGE,
+        insight1: null,
+        insight2: null,
+        insight3: null,
+        status: COLLECTION_STATUSES.noCaptions,
+        summary: null,
+        videoSnapshotId: snapshot.id,
+      });
       await channelRepository.touchLastCheckedAt(input.channelId);
 
       return {

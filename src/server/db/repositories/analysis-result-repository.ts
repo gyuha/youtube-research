@@ -3,12 +3,13 @@ import type { CollectionStatus } from '../../collection/collection-status';
 import { db } from '../client';
 
 interface ReplaceLatestAnalysisResultInput {
-  insight1: string;
-  insight2: string;
-  insight3: string;
+  errorMessage?: string | null;
+  insight1: string | null;
+  insight2: string | null;
+  insight3: string | null;
   status: CollectionStatus;
-  summary: string;
-  videoSnapshotId: string;
+  summary: string | null;
+  videoSnapshotId: string | null;
 }
 
 export const analysisResultRepository = {
@@ -16,8 +17,8 @@ export const analysisResultRepository = {
     db.analysisResult.findUnique({ where: { channelId } }),
   replaceLatest: (channelId: string, input: ReplaceLatestAnalysisResultInput) =>
     db.analysisResult.upsert({
-      create: { channelId, ...input, errorMessage: null, processedAt: new Date() },
-      update: { ...input, errorMessage: null, processedAt: new Date() },
+      create: { channelId, ...input, errorMessage: input.errorMessage ?? null, processedAt: new Date() },
+      update: { ...input, errorMessage: input.errorMessage ?? null, processedAt: new Date() },
       where: { channelId },
     }),
   upsertStatus: (
