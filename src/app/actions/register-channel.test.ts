@@ -69,7 +69,7 @@ describe('registerChannel', () => {
   it('creates a new channel and revalidates the home page', async () => {
     const createdChannel = {
       id: 'channel-2',
-      channelUrl: 'https://www.youtube.com/@openai',
+      channelUrl: 'https://www.youtube.com/channel/UC123',
       youtubeChannelId: 'UC123',
       title: 'OpenAI',
       thumbnailUrl: 'https://example.com/thumb.jpg',
@@ -89,7 +89,7 @@ describe('registerChannel', () => {
     });
 
     expect(mocks.create).toHaveBeenCalledWith({
-      channelUrl: 'https://www.youtube.com/@openai',
+      channelUrl: 'https://www.youtube.com/channel/UC123',
       thumbnailUrl: 'https://example.com/thumb.jpg',
       title: 'OpenAI',
       youtubeChannelId: 'UC123',

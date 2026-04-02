@@ -35,7 +35,7 @@ export function normalizeChannelInput(input: string): NormalizedChannelInput {
   if (pathname.startsWith('/@')) {
     const value = pathname.slice(1).split('/')[0];
 
-    if (!value) {
+    if (value.length <= 1) {
       throw new Error('지원하지 않는 유튜브 채널 URL 형식입니다');
     }
 

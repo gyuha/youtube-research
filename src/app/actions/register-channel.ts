@@ -22,7 +22,7 @@ export async function registerChannel(input: { channelUrl: string }) {
   }
 
   const channel = await channelRepository.create({
-    channelUrl: input.channelUrl,
+    channelUrl: resolved.canonicalUrl,
     thumbnailUrl: resolved.thumbnailUrl,
     title: resolved.title,
     youtubeChannelId: resolved.youtubeChannelId,

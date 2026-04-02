@@ -16,6 +16,12 @@ describe('normalizeChannelInput', () => {
     });
   });
 
+  it('rejects malformed handle URLs', () => {
+    expect(() => normalizeChannelInput('https://www.youtube.com/@')).toThrow(
+      '지원하지 않는 유튜브 채널 URL 형식입니다',
+    );
+  });
+
   it('rejects non-youtube URLs', () => {
     expect(() => normalizeChannelInput('https://example.com')).toThrow(
       '유효한 유튜브 채널 URL이 아닙니다',
