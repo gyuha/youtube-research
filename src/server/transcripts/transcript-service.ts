@@ -4,6 +4,8 @@ import {
   YoutubeTranscriptNotAvailableError,
 } from 'youtube-transcript';
 
+import { createProviderFailureError } from '@/server/providers/provider-error';
+
 function isNoCaptionsError(error: unknown) {
   return (
     error instanceof YoutubeTranscriptDisabledError ||
@@ -26,7 +28,12 @@ export const transcriptService = {
         return null;
       }
 
-      throw error;
+      throw createProviderFailureError(
+        'youtube-transcript',
+        'getTranscript',
+        error,
+        '트랜스크립트를 가져오지 못했습니다',
+      );
     }
   },
 };

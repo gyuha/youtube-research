@@ -6,6 +6,7 @@ import {
 import { analysisResultRepository } from '@/server/db/repositories/analysis-result-repository';
 import { channelRepository } from '@/server/db/repositories/channel-repository';
 import { videoSnapshotRepository } from '@/server/db/repositories/video-snapshot-repository';
+import { isProviderError } from '@/server/providers/provider-error';
 import { transcriptService } from '@/server/transcripts/transcript-service';
 import { youtubeApi } from '@/server/youtube/youtube-api';
 
@@ -103,7 +104,14 @@ export async function collectLatestVideo(
     await touchLastCheckedAtSafely(input.channelId);
 
     return { status: COLLECTION_STATUSES.completed };
-  } catch {
+  } catch (error) {
+    if (isProviderError(error)) {
+      console.error(
+        `Collection provider error for ${input.channelId}: ${error.provider}.${error.operation} (${error.code})`,
+        error,
+      );
+    }
+
     await analysisResultRepository.upsertStatus(
       input.channelId,
       COLLECTION_STATUSES.failed,
