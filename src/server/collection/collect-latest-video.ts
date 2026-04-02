@@ -65,6 +65,7 @@ export async function collectLatestVideo(
     );
 
     if (!transcript) {
+      await videoSnapshotRepository.replaceLatest(input.channelId, latestVideo);
       await analysisResultRepository.upsertStatus(
         input.channelId,
         COLLECTION_STATUSES.noCaptions,

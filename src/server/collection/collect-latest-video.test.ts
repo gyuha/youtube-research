@@ -141,12 +141,45 @@ describe('collectLatestVideo', () => {
       'No Captions',
       '이 영상은 자막이 없어 분석하지 않았습니다',
     );
+    expect(mocks.replaceLatestVideoSnapshot).toHaveBeenCalledWith(
+      channelId,
+      latestVideo,
+    );
     expect(mocks.summarizeTranscript).not.toHaveBeenCalled();
+    expect(mocks.replaceLatestAnalysisResult).not.toHaveBeenCalled();
     expect(mocks.touchLastCheckedAt).toHaveBeenCalledWith(channelId);
     expect(result).toEqual({
       message: '이 영상은 자막이 없어 분석하지 않았습니다',
       status: 'No Captions',
     });
+  });
+
+  it('treats a repeated no-captions upload as no change after the snapshot advances', async () => {
+    mocks.getTranscript.mockResolvedValue(null);
+    mocks.findVideoSnapshotByChannelId
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ youtubeVideoId: 'video-2' });
+
+    const { collectLatestVideo } = await import('./collect-latest-video');
+
+    const firstResult = await collectLatestVideo({ channelId, youtubeChannelId });
+    const secondResult = await collectLatestVideo({ channelId, youtubeChannelId });
+
+    expect(firstResult).toEqual({
+      message: '이 영상은 자막이 없어 분석하지 않았습니다',
+      status: 'No Captions',
+    });
+    expect(secondResult).toEqual({
+      message: '새 영상이 없습니다',
+      status: 'No Change',
+    });
+    expect(mocks.replaceLatestVideoSnapshot).toHaveBeenCalledTimes(1);
+    expect(mocks.getTranscript).toHaveBeenCalledTimes(1);
+    expect(mocks.upsertAnalysisStatus).toHaveBeenNthCalledWith(
+      4,
+      channelId,
+      'No Change',
+    );
   });
 
   it('completes analysis for a new captioned video', async () => {
