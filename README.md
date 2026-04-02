@@ -2,21 +2,27 @@
 
 Internal Next.js dashboard for manually collecting the latest video from registered YouTube channels.
 
-## Getting Started
+## Development
 
 ```bash
 pnpm install
 cp .env.example .env
 pnpm prisma generate
+pnpm prisma migrate dev
 pnpm dev
 ```
 
-## Scripts
+Open `http://localhost:3000` after the dev server starts.
 
-- `pnpm dev` starts the development server.
-- `pnpm typecheck` runs the TypeScript compiler in no-emit mode.
-- `pnpm test` runs Vitest.
-- `pnpm build` creates the production build.
+## Testing
+
+Run the verification commands before delivery:
+
+```bash
+pnpm test
+pnpm lint
+pnpm build
+```
 
 ## Environment
 
