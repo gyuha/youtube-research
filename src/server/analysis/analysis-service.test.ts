@@ -13,14 +13,17 @@ vi.mock('openai', () => ({
       },
     };
 
-    constructor() {
-      mocks.constructor();
+    constructor(...args: unknown[]) {
+      mocks.constructor(...args);
     }
   },
 }));
 
 describe('analysisService', () => {
   beforeEach(() => {
+    delete process.env.OPENROUTER_MODEL;
+    process.env.OPENROUTER_API_KEY = 'test-openrouter-key';
+    process.env.NEXT_PUBLIC_APP_NAME = 'YouTube Research Dashboard';
     vi.resetModules();
     vi.clearAllMocks();
   });
@@ -44,6 +47,14 @@ describe('analysisService', () => {
     const result = await analysisService.summarizeTranscript('원본 트랜스크립트');
 
     expect(mocks.constructor).toHaveBeenCalledTimes(1);
+    expect(mocks.constructor).toHaveBeenCalledWith({
+      apiKey: 'test-openrouter-key',
+      baseURL: 'https://openrouter.ai/api/v1',
+      defaultHeaders: {
+        'HTTP-Referer': 'http://localhost:3000',
+        'X-Title': 'YouTube Research Dashboard',
+      },
+    });
     expect(mocks.parse).toHaveBeenCalledWith({
       messages: [
         {
@@ -53,7 +64,7 @@ describe('analysisService', () => {
         },
         { content: '원본 트랜스크립트', role: 'user' },
       ],
-      model: 'gpt-5.4',
+      model: 'openai/gpt-4o-mini',
       response_format: expect.any(Object),
     });
     expect(result).toEqual(parsedResult);

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { createMissingConfigurationError } from '@/server/providers/provider-error';
 import { registerChannel } from './register-channel';
 
 const mocks = vi.hoisted(() => ({
@@ -136,6 +137,25 @@ describe('registerChannel', () => {
       channel: existingChannel,
       created: false,
       ok: true,
+    });
+  });
+
+  it('returns a helpful message when youtube api key is missing', async () => {
+    mocks.resolveChannel.mockRejectedValue(
+      createMissingConfigurationError(
+        'youtube',
+        'createClient',
+        'YOUTUBE_API_KEY is required',
+      ),
+    );
+
+    const result = await registerChannel({
+      channelUrl: 'https://www.youtube.com/@openai',
+    });
+
+    expect(result).toEqual({
+      message: 'YOUTUBE_API_KEY 설정이 필요합니다. .env 파일을 확인해 주세요.',
+      ok: false,
     });
   });
 });

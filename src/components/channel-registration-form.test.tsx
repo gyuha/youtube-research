@@ -58,4 +58,25 @@ describe('ChannelRegistrationForm', () => {
       await screen.findByText(/channel is already registered/i),
     ).toBeInTheDocument();
   });
+
+  it('shows server-side error feedback when registration fails', async () => {
+    mocks.registerChannel.mockResolvedValue({
+      message: 'YOUTUBE_API_KEY 설정이 필요합니다. .env 파일을 확인해 주세요.',
+      ok: false,
+    });
+
+    const user = userEvent.setup();
+
+    render(<ChannelRegistrationForm />);
+
+    await user.type(
+      screen.getByLabelText(/youtube channel url/i),
+      'https://www.youtube.com/@openai',
+    );
+    await user.click(screen.getByRole('button', { name: /register channel/i }));
+
+    expect(
+      await screen.findByText(/YOUTUBE_API_KEY 설정이 필요합니다/i),
+    ).toBeInTheDocument();
+  });
 });

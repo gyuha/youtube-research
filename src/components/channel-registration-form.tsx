@@ -22,14 +22,15 @@ export function ChannelRegistrationForm() {
     const channelUrl = String(formData.get('channelUrl') ?? '');
 
     startTransition(async () => {
-      try {
-        const result = await registerChannel({ channelUrl });
+      const result = await registerChannel({ channelUrl });
 
+      if (result.ok) {
         setFeedback(getFeedbackMessage(result.created));
         form.reset();
-      } catch {
-        setFeedback('Unable to register the channel right now.');
+        return;
       }
+
+      setFeedback(result.message);
     });
   }
 

@@ -29,7 +29,10 @@ pnpm build
 Copy `.env.example` to `.env` and set these values before using channel registration or collection:
 
 - `YOUTUBE_API_KEY`: Google API key with YouTube Data API v3 enabled
-- `OPENAI_API_KEY`: OpenAI API key for transcript summarization
+- `OPENROUTER_API_KEY`: OpenRouter API key for transcript summarization
+- `OPENROUTER_MODEL` (optional): OpenRouter model id (default `openai/gpt-4o-mini`)
+- `OPENROUTER_SITE_URL` (optional): Service URL used for OpenRouter ranking headers
+- `OPENROUTER_APP_NAME` (optional): Service name used for OpenRouter ranking headers
 - `DATABASE_URL`: Prisma database connection string
 
 ## Provider Notes
