@@ -17,7 +17,7 @@ describe('ChannelCard', () => {
     vi.clearAllMocks();
   });
 
-  it('shows the latest recoverable collection message inline', async () => {
+  it('keeps the badge derived from props while showing recoverable feedback inline', async () => {
     mocks.collectChannel.mockResolvedValue({
       message: '새 영상이 없습니다',
       status: 'No Change',
@@ -44,6 +44,7 @@ describe('ChannelCard', () => {
     await user.click(screen.getByRole('button', { name: /collect now for openai/i }));
 
     expect(await screen.findByText(/새 영상이 없습니다/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/No Change/i)).toHaveLength(2);
+    expect(screen.getByText('Idle')).toBeInTheDocument();
+    expect(screen.queryByText('No Change')).not.toBeInTheDocument();
   });
 });

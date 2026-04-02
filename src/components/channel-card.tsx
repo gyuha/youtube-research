@@ -5,7 +5,6 @@ import { useState, useTransition } from 'react';
 import { collectChannel } from '@/app/actions/collect-channel';
 import { COLLECTION_STATUSES } from '@/server/collection/collection-status';
 
-import type { CollectionStatus } from '@/server/collection/collection-status';
 import type { DashboardChannel } from './dashboard-types';
 
 import { getDashboardStatus } from './dashboard-types';
@@ -23,8 +22,7 @@ function formatLastChecked(value: Date | null) {
 }
 
 export function ChannelCard({ channel }: { channel: DashboardChannel }) {
-  const initialStatus = channel.analysisResult?.status ?? COLLECTION_STATUSES.idle;
-  const [status, setStatus] = useState<CollectionStatus>(initialStatus);
+  const status = channel.analysisResult?.status ?? COLLECTION_STATUSES.idle;
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -39,10 +37,8 @@ export function ChannelCard({ channel }: { channel: DashboardChannel }) {
 
         const nextStatus = getDashboardStatus(result.status);
 
-        setStatus(nextStatus);
         setFeedback(result.message ?? `Latest status: ${nextStatus}`);
       } catch {
-        setStatus(COLLECTION_STATUSES.failed);
         setFeedback('Unable to collect right now.');
       }
     });
@@ -86,7 +82,7 @@ export function ChannelCard({ channel }: { channel: DashboardChannel }) {
           </form>
           {feedback ? (
             <p className="text-sm text-slate-600" role="status">
-              {feedback} ({status})
+              {feedback}
             </p>
           ) : null}
         </div>
