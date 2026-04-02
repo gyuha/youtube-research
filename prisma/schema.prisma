@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Channel {
+  id              String          @id @default(cuid())
+  channelUrl      String
+  youtubeChannelId String         @unique
+  title           String
+  thumbnailUrl    String?
+  lastCheckedAt   DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  videoSnapshot   VideoSnapshot?
+  analysisResult  AnalysisResult?
+}
+
+model VideoSnapshot {
+  id             String          @id @default(cuid())
+  channelId      String          @unique
+  youtubeVideoId String
+  title          String
+  videoUrl       String
+  publishedAt    DateTime
+  thumbnailUrl   String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  channel        Channel         @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  analysisResult AnalysisResult?
+}
+
+model AnalysisResult {
+  id              String         @id @default(cuid())
+  channelId      String   @unique
+  videoSnapshotId String?        @unique
+  status          String
+  summary         String?
+  insight1        String?
+  insight2        String?
+  insight3        String?
+  errorMessage    String?
+  processedAt     DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  channel         Channel        @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  videoSnapshot   VideoSnapshot? @relation(fields: [videoSnapshotId], references: [id], onDelete: SetNull)
+}

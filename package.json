@@ -1,0 +1,42 @@
+{
+  "name": "youtube-research-dashboard",
+  "private": true,
+  "packageManager": "pnpm@10.28.2",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.0.0",
+    "googleapis": "^171.4.0",
+    "next": "^16.2.2",
+    "openai": "^6.33.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "youtube-transcript": "^1.3.0",
+    "zod": "^4.2.2"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "autoprefixer": "^10.4.27",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.2",
+    "jsdom": "^29.0.1",
+    "postcss": "^8.5.8",
+    "prisma": "^6.0.0",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  }
+}
