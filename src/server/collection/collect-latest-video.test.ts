@@ -235,6 +235,9 @@ describe('collectLatestVideo', () => {
       channelId,
       'Failed',
       '처리 중 오류가 발생했습니다',
+      {
+        clearAnalysis: true,
+      },
     );
   });
 
@@ -290,6 +293,9 @@ describe('collectLatestVideo', () => {
       channelId,
       'Failed',
       '처리 중 오류가 발생했습니다',
+      {
+        clearAnalysis: true,
+      },
     );
     expect(mocks.touchLastCheckedAt).toHaveBeenCalledWith(channelId);
     expect(result).toEqual({

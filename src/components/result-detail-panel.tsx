@@ -19,6 +19,14 @@ function getInsights(channel: DashboardChannel) {
   ].filter((insight): insight is string => Boolean(insight));
 }
 
+function getSummaryText(channel: DashboardChannel) {
+  return (
+    channel.analysisResult?.errorMessage ??
+    channel.analysisResult?.summary ??
+    'The latest status will appear here after collection finishes.'
+  );
+}
+
 export function ResultDetailPanel({
   channel,
 }: {
@@ -68,11 +76,7 @@ export function ResultDetailPanel({
         <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
           Summary
         </h4>
-        <p className="text-sm leading-7 text-slate-700">
-          {channel.analysisResult?.summary ??
-            channel.analysisResult?.errorMessage ??
-            'The latest status will appear here after collection finishes.'}
-        </p>
+        <p className="text-sm leading-7 text-slate-700">{getSummaryText(channel)}</p>
       </div>
 
       <div className="space-y-3">

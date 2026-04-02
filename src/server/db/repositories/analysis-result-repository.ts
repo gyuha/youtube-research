@@ -21,6 +21,10 @@ interface CommitLatestForVideoInput {
   videoSnapshot: ReplaceLatestVideoSnapshotInput;
 }
 
+interface UpsertStatusOptions {
+  clearAnalysis?: boolean;
+}
+
 function isPrismaUniqueConstraintError(
   error: unknown,
 ): error is { code: string; name?: string } {
@@ -112,18 +116,27 @@ export const analysisResultRepository = {
     channelId: string,
     status: CollectionStatus,
     errorMessage?: string | null,
+    options?: UpsertStatusOptions,
   ) =>
     db.analysisResult.upsert({
       create: {
         channelId,
         errorMessage: errorMessage ?? null,
+        insight1: options?.clearAnalysis ? null : undefined,
+        insight2: options?.clearAnalysis ? null : undefined,
+        insight3: options?.clearAnalysis ? null : undefined,
         processedAt: new Date(),
         status,
+        summary: options?.clearAnalysis ? null : undefined,
       },
       update: {
         errorMessage: errorMessage ?? null,
+        insight1: options?.clearAnalysis ? null : undefined,
+        insight2: options?.clearAnalysis ? null : undefined,
+        insight3: options?.clearAnalysis ? null : undefined,
         processedAt: new Date(),
         status,
+        summary: options?.clearAnalysis ? null : undefined,
       },
       where: { channelId },
     }),

@@ -116,6 +116,9 @@ export async function collectLatestVideo(
       input.channelId,
       COLLECTION_STATUSES.failed,
       FAILED_MESSAGE,
+      {
+        clearAnalysis: true,
+      },
     );
     await touchLastCheckedAtSafely(input.channelId);
 
